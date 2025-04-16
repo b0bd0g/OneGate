@@ -7,9 +7,9 @@ Yet another shellcode loader - but a sneaky one
 
 This is a combination of my earlier shellcode obfuscation project [WhenAPayloadCalls](https://github.com/b0bd0g/WhenAPayloadCalls) but now with a custom shellcode loader which aims to defeat antivirus and EDR solutions.
 
-The intent was to use the most obvious WinAPIs possible while aslo using least amount of evasion techniques and still have it defeat AV/EDR. As such it uses:
+The intent was to use the most obvious WinAPIs possible while also using the least amount of evasion techniques and still have it defeat AV/EDR. As such it uses:
 
-- VirtualAlloc to execute RWX memory
+- VirtualAlloc to alloate RWX memory
 - No use of VirtualProtect to flip memory protections - just does everything inside RWX memory
 - Uses CreateThread to run
 - No sandbox evasion
@@ -41,9 +41,9 @@ OneGate first allocates a memory page and fills it with random instructions. It 
 
 It then opens the file that is being used to perform the byte deobfuscation and iterates through `Postitions[]` and only decrptys the number of bytes needed for that particular instruction. This way only the exact bytes required for the next instruction are ever revealed at any given time. These bytes are written to their correct plce in the memory page (overwriting what is already there) and executed using single setpping. Once an instruction is executed the original bytes that were overwritten are written back to their place in the memory page. Therefore not only are the bytes only exposed for the minimum amount of time, but unless the defence system can catch the modification in time, it will appear as though nothing changed on the memory page at that particular address.
 
-To defeat any register based pattern recognition which may be used by EDRs, at random intervals OneGate generates a random set of instructions and executes them - these are referred to as dummy instructions. A stable of instructions are held in the `instructions[][]` array. It will select a random number of instructions to use for each given dummy set, so that the dummy instructions are not always the same length. Before executing the dummy instructions, it saves the thread context of the shellcode execution. This enables the dummy instructions to modify them at will. The tread context is then restored and execution of the shellcode continues as if nothing happened.
+To defeat any register based pattern recognition which may be used by EDRs, at random intervals OneGate generates a random set of instructions and executes them - these are referred to as dummy instructions. The current rate is 2% but this can be modified easily. A stable of instructions are held in the `instructions[][]` array. It will select a random number of instructions to use for each given dummy set, so that the number of dummy instructions is not always the same. Before executing the dummy instructions, it saves the thread context of the shellcode execution. This enables the dummy instructions to modify them at will. The tread context is then restored and execution of the shellcode continues as if nothing happened.
 
-Currently the `instructions[][]` array only takes instructions which are three bytes in length. There is also a hardcoded value in the `CreateDummy()` function which only allows it to deal with three byte instructions. The size of the array and the hard coded instructions can be changed at will to avoid signature based detections, however no testing has been conducted with instructions larger than 3 bytes in length.
+Currently the `instructions[][]` array only takes instructions which are three bytes in length. There is also a hardcoded value in the `CreateDummy()` function which only allows it to deal with three byte instructions. The size of the array and the hard coded instructions can be changed at will to avoid signature based detections, however no testing has been conducted with instructions larger than 3 bytes in length. At the moment the dummy instructions just modify values in the registers using things like `inc`, `sub`, `xor` etc.
 
 OneGate takes a **LOOOOONG** time to run payloads, so be patient after you launch it. On my VM with very little system resources it takes about 3 minutes to spawn a calculator and 20 minutes to get a reverse shell connection. In the lab environment (see Evasion) it took about 6 minutes to get a reverse shell.
 
@@ -81,7 +81,7 @@ This was tested in [Altered Security](https://www.alteredsecurity.com/)'s lab en
 
 <img src="./pictures/rev_shell_connect.png" alt="Image" width="600">
 
-An analysis of the MDE dashboard shows only one detection by MDE which had to do with a compromised account and the dumping of a SAM hive (this was a shared environment so other people were doing other things). Of interest is the fact that MDE had flagged the `jumpone$` account shown in the picture below as being compromised - this was the same account used to sign in to deploy OneGate on the target machine meaning that even with a flagged account MDE did not detect the execution of the reverse shell.
+An analysis of the MDE dashboard shows only one detection by MDE which had to do with a compromised account and the dumping of a SAM hive (this was a shared environment so other people were doing other things). This detection was present prior to running OneGate. Of interest is the fact that MDE had flagged the `jumpone$` account shown in the picture below as being compromised - this was the same account used to sign in to deploy OneGate on the target machine meaning that even with a flagged account MDE did not detect the execution of the reverse shell.
 
 
 <img src="./pictures/mde_dashboard.png" alt="Image" width="1000">
