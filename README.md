@@ -5,7 +5,7 @@ Yet another shellcode loader - but a sneaky one
 <img src="./pictures/2_JS188188658-1141921000.jpg" alt="Image" width="400">
 
 
-This is a combination of my earlier shellcode obfuscation project WhenAPayloadCalls but now with a custom shellcode loader which aims to defeat antivirus and EDR solutions.
+This is a combination of my earlier shellcode obfuscation project [WhenAPayloadCalls](https://github.com/b0bd0g/WhenAPayloadCalls) but now with a custom shellcode loader which aims to defeat antivirus and EDR solutions.
 
 The intent was to use the most obvious WinAPIs possible while aslo using least amount of evasion techniques and still have it defeat AV/EDR. As such it uses:
 
